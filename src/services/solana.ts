@@ -16,21 +16,13 @@ export class SolanaService {
       const largestAccounts = await this.connection.getTokenLargestAccounts(this.tokenMint);
       
       // Get additional holders via getProgramAccounts
-      const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-      
+      const TOKEN_PROGRAM_ID = new PublicKey('9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump');
       const filters: GetProgramAccountsFilter[] = [
-        {
-          dataSize: 165, // SPL Token Account size
-        },
-        {
-          memcmp: {
-            offset: 0,
-            bytes: this.tokenMint.toBase58(),
-          },
-        },
+        { dataSize: 165 },
+        { memcmp: { offset: 0, bytes: this.tokenMint.toBase58() } },
       ];
 
-      const accounts = await this.connection.getProgramAccounts(TOKEN_PROGRAM_ID, {
+      await this.connection.getProgramAccounts(TOKEN_PROGRAM_ID, {
         filters,
         encoding: 'base64',
       });
@@ -43,11 +35,11 @@ export class SolanaService {
         const balance = account.uiAmount || 0;
         totalSupply += balance;
         holders.push({
-          address: account.address || '',
+          address: account.address?.toString() || '', // Fix: ensure address is string
           balance: balance,
           balanceUi: balance,
           rank: index + 1,
-          percentage: 0, // Will calculate after getting total supply
+          percentage: 0,
         });
       });
 
@@ -101,10 +93,8 @@ export class SolanaService {
       
       const transactions = await Promise.all(
         signatures.map(async (sig) => {
-          const tx = await this.connection.getTransaction(sig.signature, {
-            encoding: 'jsonParsed',
-            maxSupportedTransactionVersion: 0,
-          });
+          // Remove 'encoding' and 'maxSupportedTransactionVersion' from config
+          const tx = await this.connection.getTransaction(sig.signature);
           return tx;
         })
       );
